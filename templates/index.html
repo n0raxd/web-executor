@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Roblox Exploit UI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/theme/material.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #1c1c1c;
+        }
+        .container {
+            background: #2b2b2b;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            width: 600px;
+        }
+        .tabs {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 10px;
+        }
+        .tab {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: #3a3a3a;
+            color: #fff;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            margin-right: 5px;
+            text-align: center;
+            flex-grow: 1;
+            max-width: 120px;
+        }
+        .tab.active {
+            background-color: #00aaff;
+        }
+        .tab:last-child {
+            flex-grow: 0;
+            max-width: 40px;
+            background-color: #444;
+            justify-content: center;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .CodeMirror {
+            height: 300px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background-color: #333;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            box-sizing: border-box;
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        input[type="button"] {
+            background-color: #3a3a3a;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            flex: 1;
+            margin-right: 10px;
+            box-sizing: border-box;
+        }
+        input[type="button"]:last-child {
+            margin-right: 0;
+        }
+        input[type="button"]:hover {
+            background-color: #555;
+        }
+        #execute {
+            background-color: #00aaff;
+        }
+        #execute:hover {
+            background-color: #0088cc;
+        }
+        #save {
+            background-color: #4caf50;
+        }
+        #save:hover {
+            background-color: #388e3c;
+        }
+        .close-btn {
+            margin-left: 10px;
+            background-color: transparent;
+            border: none;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .close-btn:hover {
+            color: #ff5c5c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tabs" id="tabs">
+            <div class="tab active" id="tab-0" onclick="switchTab(0)">
+                <span>Tab 1</span>
+                <button class="close-btn" onclick="closeTab(0, event)">x</button>
+            </div>
+            <div class="tab" onclick="addTab()">+</div>
+        </div>
+        <div class="tab-content active" id="tab-content-0">
+            <div class="CodeMirror"></div>
+        </div>
+        <div class="button-container">
+            <input type="button" id="execute" value="Execute" onclick="executeScript()">
+            <input type="button" id="clear" value="Clear" onclick="clearActiveTab()">
+            <input type="button" id="save" value="Save" onclick="saveToFile()">
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.0/mode/lua/lua.min.js"></script>
+    <script>
+        let tabCount = 1;
+        let codeMirrors = [];
+
+        function initializeCodeMirror(container) {
+            return CodeMirror(container, {
+                mode: 'lua',
+                theme: 'material',
+                lineNumbers: true,
+                tabSize: 2,
+                lineWrapping: true
+            });
+        }
+
+        function addTab() {
+            const tabId = tabCount;
+            const tabsContainer = document.getElementById('tabs');
+
+            const newTab = document.createElement('div');
+            newTab.className = 'tab';
+            newTab.id = `tab-${tabId}`;
+            newTab.innerHTML = `<span>Tab ${tabId + 1}</span><button class="close-btn" onclick="closeTab(${tabId}, event)">x</button>`;
+            newTab.onclick = function() { switchTab(tabId); };
+            tabsContainer.insertBefore(newTab, tabsContainer.lastElementChild);
+
+            const newTabContent = document.createElement('div');
+            newTabContent.className = 'tab-content';
+            newTabContent.id = `tab-content-${tabId}`;
+            newTabContent.innerHTML = `<div class="CodeMirror"></div>`;
+            document.querySelector('.container').insertBefore(newTabContent, document.querySelector('.container').lastElementChild);
+
+            const newCodeMirror = initializeCodeMirror(newTabContent.querySelector('.CodeMirror'));
+            codeMirrors.push(newCodeMirror);
+
+            switchTab(tabId);
+            tabCount++;
+        }
+
+        function switchTab(index) {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach((tab) => tab.classList.remove('active'));
+            tabContents.forEach((content) => content.classList.remove('active'));
+
+            document.getElementById(`tab-${index}`).classList.add('active');
+            document.getElementById(`tab-content-${index}`).classList.add('active');
+
+            codeMirrors.forEach(cm => cm.refresh());
+        }
+
+        function closeTab(index, event) {
+            event.stopPropagation();
+            const tab = document.getElementById(`tab-${index}`);
+            const tabContent = document.getElementById(`tab-content-${index}`);
+
+            if (tab) {
+                tab.remove();
+            }
+
+            if (tabContent) {
+                tabContent.remove();
+            }
+
+            codeMirrors = codeMirrors.filter(cm => cm.getWrapperElement().closest('.tab-content') !== null);
+
+            const remainingTabs = document.querySelectorAll('.tab');
+            if (remainingTabs.length > 1) {
+                switchTab(remainingTabs[0].id.split('-')[1]);
+            } else {
+                tabCount = 1;
+                addTab();
+            }
+        }
+
+        function clearActiveTab() {
+            const activeCodeMirror = codeMirrors.find(cm => cm.getWrapperElement().closest('.tab-content').classList.contains('active'));
+            if (activeCodeMirror) {
+                activeCodeMirror.setValue('');
+            }
+        }
+
+        function saveToFile() {
+            const activeCodeMirror = codeMirrors.find(cm => cm.getWrapperElement().closest('.tab-content').classList.contains('active'));
+            if (activeCodeMirror) {
+                const text = activeCodeMirror.getValue();
+                const blob = new Blob([text], { type: 'text/plain' });
+                const anchor = document.createElement('a');
+                anchor.download = `script-${Date.now()}.txt`;
+                anchor.href = window.URL.createObjectURL(blob);
+                anchor.target = '_blank';
+                anchor.style.display = 'none';
+                document.body.appendChild(anchor);
+                anchor.click();
+                document.body.removeChild(anchor);
+            }
+        }
+
+        function executeScript() {
+            const activeCodeMirror = codeMirrors.find(cm => cm.getWrapperElement().closest('.tab-content').classList.contains('active'));
+            if (activeCodeMirror) {
+                const text = activeCodeMirror.getValue();
+
+                fetch('/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({ user_input: text }),
+                })
+                .then(response => response.text())
+                .then(data => {
+                    console.log('Script executed successfully');
+                })
+                .catch(error => {
+                    console.error('Error executing script:', error);
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialCodeMirrorContainer = document.querySelector('.tab-content.active .CodeMirror');
+            if (initialCodeMirrorContainer) {
+                const cm = initializeCodeMirror(initialCodeMirrorContainer);
+                codeMirrors.push(cm);
+            }
+        });
+    </script>
+</body>
+</html>
